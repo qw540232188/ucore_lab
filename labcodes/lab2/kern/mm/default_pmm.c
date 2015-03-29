@@ -9,7 +9,7 @@
    usually split, and the remainder added to the list as another free block.
    Please see Page 196~198, Section 8.2 of Yan Wei Ming's chinese book "Data Structure -- C programming language"
 */
-// LAB2 EXERCISE 1: YOUR CODE
+// LAB2 EXERCISE 1: 2012011278
 // you should rewrite functions: default_init,default_init_memmap,default_alloc_pages, default_free_pages.
 /*
  * Details of FFMA
@@ -71,72 +71,105 @@ default_init_memmap(struct Page *base, size_t n) {
     struct Page *p = base;
     for (; p != base + n; p ++) {
         assert(PageReserved(p));
-        p->flags = p->property = 0;
-        set_page_ref(p, 0);
+        p->flags = 0;
+        SetPageProperty(p);//设置PG_property(第1位)为1，表明该页有效
+        p->property = 0;//若页空闲，并且不是第一页，将property设置为0
+        set_page_ref(p, 0);//将页的ref设为0，表明该页空闲并且没有引用
+        list_add_before(&free_list, &(p->page_link));//将该页插入到list的前面
     }
-    base->property = n;
-    SetPageProperty(base);
-    nr_free += n;
-    list_add(&free_list, &(base->page_link));
+    base->property = n;//若页空闲，并且是第一页，将property设置为页面的数量
+    nr_free += n;//更新空闲块数为n
 }
 
 static struct Page *
 default_alloc_pages(size_t n) {
-    assert(n > 0);
+    assert(n > 0);//4.1
     if (n > nr_free) {
         return NULL;
-    }
+    }//先判断剩余的空间是否比需要的大，若小于需要的空间，则返回NULL
+
     struct Page *page = NULL;
-    list_entry_t *le = &free_list;
-    while ((le = list_next(le)) != &free_list) {
-        struct Page *p = le2page(le, page_link);
-        if (p->property >= n) {
+    list_entry_t *le;
+    le = &free_list;
+    list_entry_t *le_next;
+
+    while ((le = list_next(le)) != &free_list)
+    {//剩余空间足够，则对list进行遍历，寻找满足大小的块。
+        struct Page *p = le2page(le, page_link);//4.1.1
+        if (p->property >= n)//4.1.2
+        {
             page = p;
-            break;
+        	int i;
+        	for(i=0; i<n; i++)//遍历中找到了符合大小的块p，则先对p开始的n个小块进行处理
+        	{
+        		le_next = list_next(le);
+        		struct Page *p2del = le2page(le, page_link);
+        		//设置PG_reserved=1, PG_property=0
+        		SetPageReserved(p2del);
+        		ClearPageProperty(p2del);
+        		list_del(le);//将相应的节点从list中删去
+        		le = le_next;
+        	}
+        	if (p->property >n)//4.1.2.1
+        	{//若p的大小大于n(而不是恰好等于)，则需要更新该块的大小
+        		(le2page(le,page_link))->property = p->property - n;
+        	}
+        	nr_free -= n;//4.1.3 重新计算所有剩余的空闲块
+        	return p;//4.1.4
         }
     }
-    if (page != NULL) {
-        list_del(&(page->page_link));
-        if (page->property > n) {
-            struct Page *p = page + n;
-            p->property = page->property - n;
-            list_add(&free_list, &(p->page_link));
-    }
-        nr_free -= n;
-        ClearPageProperty(page);
-    }
-    return page;
+    return NULL;//4.2若遍历一遍后找不到，返回NULL
 }
 
 static void
 default_free_pages(struct Page *base, size_t n) {
     assert(n > 0);
-    struct Page *p = base;
-    for (; p != base + n; p ++) {
-        assert(!PageReserved(p) && !PageProperty(p));
-        p->flags = 0;
-        set_page_ref(p, 0);
+    assert(PageReserved(base));
+
+    struct Page *p;
+    list_entry_t *le = &free_list;
+    while ((le = list_next(le)) != &free_list)//找到对的位置
+    {
+    	p = le2page(le,page_link);
+    	if(p>base)
+    		break;
     }
-    base->property = n;
+    //将n个页面插入到le前面
+    for (p = base; p < base + n; p ++)
+    {
+    	list_add_before(le,&(p->page_link));
+    }
+    //对第一个页进行设置
+    base->flags = 0;
+    set_page_ref(base, 0);
     SetPageProperty(base);
-    list_entry_t *le = list_next(&free_list);
-    while (le != &free_list) {
-        p = le2page(le, page_link);
-        le = list_next(le);
-        if (base + base->property == p) {
-            base->property += p->property;
-            ClearPageProperty(p);
-            list_del(&(p->page_link));
-        }
-        else if (p + p->property == base) {
-            p->property += base->property;
-            ClearPageProperty(base);
-            base = p;
-            list_del(&(p->page_link));
-        }
+    base->property = n;
+    //向后合并
+    p = le2page(le,page_link);
+    if(base+n == p)
+    {
+    	base->property += p->property;
+    	p->property = 0;
     }
+    //向前合并
+    le = list_prev(&(base->page_link));
+    p = le2page(le, page_link);
+    if(le!=&free_list && p==base-1)//表明是连续的，可以合并
+    {
+    	while(le!=&free_list)
+    	{
+    		if(p->property != 0)//表明是块开始位置
+            {
+              p->property += base->property;
+              base->property = 0;
+              break;
+            }
+            le = list_prev(le);
+            p = le2page(le,page_link);
+    	}
+    }
+    //更新剩余空闲块
     nr_free += n;
-    list_add(&free_list, &(base->page_link));
 }
 
 static size_t

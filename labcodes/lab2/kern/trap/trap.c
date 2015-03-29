@@ -34,7 +34,7 @@ static struct pseudodesc idt_pd = {
 /* idt_init - initialize IDT to each of the entry points in kern/trap/vectors.S */
 void
 idt_init(void) {
-     /* LAB1 YOUR CODE : STEP 2 */
+     /* LAB1 2012011278 : STEP 2 */
      /* (1) Where are the entry addrs of each Interrupt Service Routine (ISR)?
       *     All ISR's entry addrs are stored in __vectors. where is uintptr_t __vectors[] ?
       *     __vectors[] is in kern/trap/vector.S which is produced by tools/vector.c
@@ -46,6 +46,16 @@ idt_init(void) {
       *     You don't know the meaning of this instruction? just google it! and check the libs/x86.h to know more.
       *     Notice: the argument of lidt is idt_pd. try to find it!
       */
+    extern uintptr_t __vectors[];//（1）先得到有IDT信息的数组
+    int i;//(2)用SETGATE函数对IDT进行初始化（一共有256项）
+    for(i=0; i<256; i++)
+    	SETGATE(idt[i], 0, GD_KTEXT, __vectors[i], DPL_KERNEL);
+    	//参数为IDT项、为异常(1)或者中断(1)、处理段选择子(在GDT中)、处理的入口、特权级DPL
+
+    SETGATE(idt[T_SWITCH_TOK], 0, GD_KTEXT, __vectors[T_SWITCH_TOK], DPL_USER);
+    //参考答案后加上，用于用户态与内核态的切换
+
+    lidt(&idt_pd);//(3)用lidt函数告知CPU，注意传入的参数是IDT的地址
 }
 
 static const char *
@@ -134,6 +144,8 @@ print_regs(struct pushregs *regs) {
     cprintf("  eax  0x%08x\n", regs->reg_eax);
 }
 
+struct trapframe switchk2u, *switchu2k;//LAB1 CHALLENGE 1
+
 /* trap_dispatch - dispatch based on what type of trap occurred */
 static void
 trap_dispatch(struct trapframe *tf) {
@@ -141,12 +153,15 @@ trap_dispatch(struct trapframe *tf) {
 
     switch (tf->tf_trapno) {
     case IRQ_OFFSET + IRQ_TIMER:
-        /* LAB1 YOUR CODE : STEP 3 */
+    	/* LAB1 2012011278 : STEP 3 */
         /* handle the timer interrupt */
         /* (1) After a timer interrupt, you should record this event using a global variable (increase it), such as ticks in kern/driver/clock.c
          * (2) Every TICK_NUM cycle, you can print some info using a funciton, such as print_ticks().
          * (3) Too Simple? Yes, I think so!
          */
+		ticks ++;
+		if(ticks % TICK_NUM == 0)
+			print_ticks();
         break;
     case IRQ_OFFSET + IRQ_COM1:
         c = cons_getc();
@@ -156,11 +171,30 @@ trap_dispatch(struct trapframe *tf) {
         c = cons_getc();
         cprintf("kbd [%03d] %c\n", c, c);
         break;
-    //LAB1 CHALLENGE 1 : YOUR CODE you should modify below codes.
+    //LAB1 CHALLENGE 1 : 2012011278 you should modify below codes.
     case T_SWITCH_TOU:
-    case T_SWITCH_TOK:
-        panic("T_SWITCH_** ??\n");
-        break;
+        	if (tf->tf_cs != USER_CS)
+        	{
+        		switchk2u = *tf;
+        	    switchk2u.tf_cs = USER_CS;
+        	    switchk2u.tf_ds = switchk2u.tf_es = switchk2u.tf_ss = USER_DS;
+        	    switchk2u.tf_esp = (uint32_t)tf + sizeof(struct trapframe) - 8;
+        	    switchk2u.tf_eflags |= FL_IOPL_MASK;
+        	    *((uint32_t *)tf - 1) = (uint32_t)&switchk2u;
+        	}
+        	break;
+        case T_SWITCH_TOK:
+            //panic("T_SWITCH_** ??\n");
+        	if (tf->tf_cs != KERNEL_CS)
+        	{
+        		tf->tf_cs = KERNEL_CS;
+        		tf->tf_ds = tf->tf_es = KERNEL_DS;
+        		tf->tf_eflags &= ~FL_IOPL_MASK;
+        		switchu2k = (struct trapframe *)(tf->tf_esp - (sizeof(struct trapframe) - 8));
+        		memmove(switchu2k, tf, sizeof(struct trapframe) - 8);
+        		*((uint32_t *)tf - 1) = (uint32_t)switchu2k;
+        	}
+            break;
     case IRQ_OFFSET + IRQ_IDE1:
     case IRQ_OFFSET + IRQ_IDE2:
         /* do nothing */
