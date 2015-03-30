@@ -69,7 +69,7 @@ static void
 default_init_memmap(struct Page *base, size_t n) {
     assert(n > 0);
     struct Page *p = base;
-    for (; p != base + n; p ++) {
+    for (; p < base + n; p ++) {
         assert(PageReserved(p));
         p->flags = 0;
         SetPageProperty(p);//设置PG_property(第1位)为1，表明该页有效
