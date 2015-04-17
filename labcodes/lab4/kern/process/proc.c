@@ -329,7 +329,7 @@ do_fork(uint32_t clone_flags, uintptr_t stack, struct trapframe *tf) {
     copy_thread(proc,stack,tf);  //4
 
     bool intr_flag;
-    local_intr_save(intr_flag);//??
+    local_intr_save(intr_flag);//中断
     {
 		proc->pid = get_pid();
 		hash_proc(proc);
@@ -337,7 +337,7 @@ do_fork(uint32_t clone_flags, uintptr_t stack, struct trapframe *tf) {
 		nr_process ++;
 		cprintf("\n\nqw...nr_process: %d\n\n\n",nr_process);
     }
-    local_intr_restore(intr_flag);//??
+    local_intr_restore(intr_flag);//中断
 
     wakeup_proc(proc);  //6
 
