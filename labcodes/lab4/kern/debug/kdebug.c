@@ -293,7 +293,7 @@ read_eip(void) {
  * */
 void
 print_stackframe(void) {
-     /* LAB1 YOUR CODE : STEP 1 */
+     /* LAB1 2012011278 : STEP 1 */
      /* (1) call read_ebp() to get the value of ebp. the type is (uint32_t);
       * (2) call read_eip() to get the value of eip. the type is (uint32_t);
       * (3) from 0 .. STACKFRAME_DEPTH
@@ -305,5 +305,24 @@ print_stackframe(void) {
       *           NOTICE: the calling funciton's return addr eip  = ss:[ebp+4]
       *                   the calling funciton's ebp = ss:[ebp]
       */
+    uint32_t qwebp = read_ebp();//(1)  获得ebp
+    uint32_t qweip = read_eip();//(2)  获得eip
+    int i;//从0到STACKFRAME_DEPTH之间循环的变量
+    int j;//用于输出参数的循环变量
+    for(i=0; i<STACKFRAME_DEPTH; i++)//(3)
+    {
+    	cprintf("ebp:0x%08x eip:0x%08x ", qwebp, qweip);//(3.1)输出ebp与eip的值
+    	uint32_t* qwargs = (uint32_t*)qwebp + 2;//(3.2)得到参数的起始地址，为ebp+2个字
+		cprintf("args:");
+		for(j=0; j<=3; j++)//输出参数args
+			cprintf("0x%08x ", qwargs[j]);
+		cprintf("\n");//(3.3)
+		print_debuginfo(qweip-1);//(3.4)
+		qweip = *((uint32_t*)qwebp + 1);//(3.5)pop
+        qwebp = *((uint32_t *)qwebp);
+
+        if(qwebp == 0)//注意程序启动时设置ebp为0,到0后应该跳出
+        	break;
+    }
 }
 
