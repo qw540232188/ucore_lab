@@ -43,20 +43,45 @@ class Bankers(object):
     def ExecuteProcess(self,index):
 
         #check if less avaliable than Request
-        # YOUR CODE, YOUR ID
+        # 2012011278
+        for i in range(len(self.avaliable)):
+            if self.avaliable[i] < self.need[index][i]:
+                return False
         #check END here
 
         #allocating what they need.
-        # YOUR CODE, YOUR ID
+        # 2012011278
+        for i in range(len(self.avaliable)):
+            self.avaliable[i] -= self.need[index][i]
+            self.allocated[index][i] += self.need[index][i]
+            self.need[index][i] = 0
+        return True
         #allocating END here
-        pass
+        # pass
 
     def TempSafeCheckAfterRelease(self):
         #check if at least one request can be done after previous process done. not check whole sequances.
         #if every element of Requests can't accepted after previous process done, this mean it is not safe state
-        # YOUR CODE, YOU ID
+        # 2012011278
+        qwSafe = True
+        qwfinishNum = 0
+        for i in range(len(self.max)):
+            #print 'qw... finish? %d' % self.finished[i]
+            if self.finished[i] == True:
+                qwfinishNum += 1
+                continue
+            qwSafe = True
+            for j in range(len(self.avaliable)):
+                if self.avaliable[j] < self.need[i][j]:
+                    qwSafe = False
+                    break
+            if qwSafe == True:
+                return True
+        if qwfinishNum == len(self.max):
+            return True
+        return False
         #check END here
-        pass
+        # pass
 
     def print_matrixes(self):
         print "_____________________________________________"
@@ -174,6 +199,7 @@ restotalval = 30
 total_resources=[]
 # the total processes
 processes=[]
+
 # set the real total value of resource in total_resources
 for i in range(resnum):
     total_resources.append((int)(restotalval*random.random()))
@@ -195,49 +221,50 @@ if result:
 else:
     print "Failed"
 
-# total_resources = [6, 5, 7, 6]
-# processes=[]
-# b = Bankers(total_resources)
-#
-# max = [
-#     [3, 3, 2, 2],
-#     [1, 2, 3, 4],
-#     [1, 3, 5, 0],
-# ]
-# allocated = [
-#     [1, 2, 2, 1],
-#     [1, 0, 3, 3],
-#     [1, 2, 1, 0],
-# ]
-#
-# b.SignProcesses(max, allocated)
-# b.print_matrixes()
-# result=b.Execute()
-# if result:
-#     print "SUCCESS proc lists ",processes
-# else:
-#     print "Failed"
-#
-#
-# total_resources = [10, 10, 8, 5]
-# processes=[]
-# b = Bankers(total_resources)
-# max = [
-#         [10, 8, 2,5],
-#         [6, 1, 3,1],
-#         [3, 1, 4,2],
-#         [5, 4, 2,1]
-#     ]
-# allocated = [
-#         [3, 0, 0,3],
-#         [1, 1, 2,0],
-#         [2, 1, 2,1],
-#         [0, 0, 2,0]
-#     ]
-# b.SignProcesses(max, allocated)
-# b.print_matrixes()
-# result=b.Execute()
-# if result:
-#     print "SUCCESS proc lists ",processes
-# else:
-#     print "Failed"
+'''
+total_resources = [6, 5, 7, 6]
+processes=[]
+b = Bankers(total_resources)
+max = [
+     [3, 3, 2, 2],
+     [1, 2, 3, 4],
+     [1, 3, 5, 0],
+]
+allocated = [
+     [1, 2, 2, 1],
+     [1, 0, 3, 3],
+     [1, 2, 1, 0],
+]
+
+b.SignProcesses(max, allocated)
+b.print_matrixes()
+result=b.Execute()
+if result:
+    print "SUCCESS proc lists ",processes
+else:
+    print "Failed"
+'''
+'''
+total_resources = [10, 10, 8, 5]
+processes=[]
+b = Bankers(total_resources)
+max = [
+        [10, 8, 2,5],
+        [6, 1, 3,1],
+        [3, 1, 4,2],
+        [5, 4, 2,1]
+    ]
+allocated = [
+        [3, 0, 0,3],
+        [1, 1, 2,0],
+        [2, 1, 2,1],
+        [0, 0, 2,0]
+   ]
+b.SignProcesses(max, allocated)
+b.print_matrixes()
+result=b.Execute()
+if result:
+    print "SUCCESS proc lists ",processes
+else:
+    print "Failed"
+'''
