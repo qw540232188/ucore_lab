@@ -68,7 +68,7 @@ TOTALS      Seek: 40  Rotate:275  Transfer: 60  Total: 375
 ./disksim.py   -a 7,30,8
 ./disksim.py   -a 10,11,12,13，24,1
 ```
-请回答每个磁盘请求序列的IO访问时间
+请回答每个磁盘请求序列的IO访问时间     
 1. 0     
 ```
 Seek:  0  Rotate:165(30*5+15)  Transfer: 30  Total: 195
