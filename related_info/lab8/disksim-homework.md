@@ -70,17 +70,17 @@ TOTALS      Seek: 40  Rotate:275  Transfer: 60  Total: 375
 ```
 请回答每个磁盘请求序列的IO访问时间     
 1. 0     
-```
-Seek:  0  Rotate:165(30*5+15)  Transfer: 30  Total: 195
-```
+ ```
+ Seek:  0  Rotate:165(30*5+15)  Transfer: 30  Total: 195
+ ```
 2. 6     
-```
-Seek:  0  Rotate:345(30*11+15)  Transfer: 30  Total: 375
-```
+ ```
+ Seek:  0  Rotate:345(30*11+15)  Transfer: 30  Total: 375
+ ```
 3. 30     
-```
-Seek: 80(2 change)  Rotate:265(30*11+15-80)  Transfer: 30  Total: 375
-```
+ ```
+ Seek: 80(2 change)  Rotate:265(30*11+15-80)  Transfer: 30  Total: 375
+ ```
 4. 7,30,8     
 ```
 Block:	7	 Seek:  0					Rotate: 15(30*0+15)		Transfer: 30  Total:  45     
