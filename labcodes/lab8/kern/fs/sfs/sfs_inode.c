@@ -589,7 +589,7 @@ sfs_io_nolock(struct sfs_fs *sfs, struct sfs_inode *sin, void *buf, off_t offset
     uint32_t blkno = offset / SFS_BLKSIZE;          // The NO. of Rd/Wr begin block
     uint32_t nblks = endpos / SFS_BLKSIZE - blkno;  // The size of Rd/Wr blocks
 
-  //LAB8:EXERCISE1 YOUR CODE HINT: call sfs_bmap_load_nolock, sfs_rbuf, sfs_rblock,etc. read different kind of blocks in file
+  //LAB8:EXERCISE1 2012011278 HINT: call sfs_bmap_load_nolock, sfs_rbuf, sfs_rblock,etc. read different kind of blocks in file
 	/*
 	 * (1) If offset isn't aligned with the first block, Rd/Wr some content from offset to the end of the first block
 	 *       NOTICE: useful function: sfs_bmap_load_nolock, sfs_buf_op
@@ -599,6 +599,67 @@ sfs_io_nolock(struct sfs_fs *sfs, struct sfs_inode *sin, void *buf, off_t offset
      * (3) If end position isn't aligned with the last block, Rd/Wr some content from begin to the (endpos % SFS_BLKSIZE) of the last block
 	 *       NOTICE: useful function: sfs_bmap_load_nolock, sfs_buf_op	
 	*/
+    //(1)读取不对齐的第一块
+    blkoff = offset % SFS_BLKSIZE;
+    if (blkoff != 0)//读取的开始位置不是对其某个block的开始处
+    {
+    	//设置该block需要读取的内容的大小
+        size = (nblks != 0) ? (SFS_BLKSIZE - blkoff) : (endpos - offset);
+        //得到实际的磁盘编号，操作失败跳到out部分
+        ret = sfs_bmap_load_nolock(sfs, sin, blkno, &ino);
+        if (ret != 0)
+            goto out;
+        //进行实际的读操作，操作失败跳到out部分
+        ret = sfs_buf_op(sfs, buf, size, ino, blkoff);
+        if (ret != 0)
+            goto out;
+        //更新已经读取长度alen
+        alen += size;
+        //读取完了，跳到out部分
+        if (nblks == 0)
+            goto out;
+        //更新存放数据位置buf、读取开始块blkno、剩余读取块数nblks
+        buf += size;
+        blkno ++;
+        nblks --;
+    }
+
+    //(2)读取中间首尾对齐的块
+    size = SFS_BLKSIZE;
+    while(nblks != 0)
+    {
+    	//得到实际的磁盘编号，操作失败跳到out部分
+    	ret = sfs_bmap_load_nolock(sfs, sin, blkno, &ino);
+    	if (ret != 0)
+    		goto out;
+    	//进行实际的读操作，操作失败跳到out部分
+    	ret = sfs_buf_op(sfs, buf, size, ino, blkoff);
+    	if (ret != 0)
+    		goto out;
+    	//更新已经读取长度alen、存放数据位置buf、读取开始块blkno、剩余读取块数nblks
+    	alen += size;
+    	buf += size;
+    	blkno ++;
+    	nblks --;
+    }
+
+    //(3)结束地址不对其，有剩余部分需要读取
+    //得到剩余读取部分的长度
+    size = endpos % SFS_BLKSIZE;
+    if(size != 0)
+    {
+    	//得到实际的磁盘编号，操作失败跳到out部分
+    	ret = sfs_bmap_load_nolock(sfs, sin, blkno, &ino);
+    	if (ret != 0)
+    		goto out;
+    	//进行实际的读操作，操作失败跳到out部分
+    	ret = sfs_buf_op(sfs, buf, size, ino, blkoff);
+    	if (ret != 0)
+    		goto out;
+    	//更新已经读取长度alen
+    	alen += size;
+    }
+
 out:
     *alenp = alen;
     if (offset + alen > sin->din->size) {

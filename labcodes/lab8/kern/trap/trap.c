@@ -42,7 +42,7 @@ static struct pseudodesc idt_pd = {
 /* idt_init - initialize IDT to each of the entry points in kern/trap/vectors.S */
 void
 idt_init(void) {
-     /* LAB1 YOUR CODE : STEP 2 */
+     /* LAB1 2012011278 : STEP 2 */
      /* (1) Where are the entry addrs of each Interrupt Service Routine (ISR)?
       *     All ISR's entry addrs are stored in __vectors. where is uintptr_t __vectors[] ?
       *     __vectors[] is in kern/trap/vector.S which is produced by tools/vector.c
@@ -54,9 +54,16 @@ idt_init(void) {
       *     You don't know the meaning of this instruction? just google it! and check the libs/x86.h to know more.
       *     Notice: the argument of lidt is idt_pd. try to find it!
       */
-     /* LAB5 YOUR CODE */ 
+     /* LAB5 2012011278 */
      //you should update your lab1 code (just add ONE or TWO lines of code), let user app to use syscall to get the service of ucore
      //so you should setup the syscall interrupt gate in here
+	extern uintptr_t __vectors[];//（1）先得到有IDT信息的数组
+    int i;//(2)用SETGATE函数对IDT进行初始化（一共有256项）
+    for(i=0; i<256; i++)
+    	SETGATE(idt[i], 0, GD_KTEXT, __vectors[i], DPL_KERNEL);
+    	//参数为IDT项、为异常(1)或者中断(1)、处理段选择子(在GDT中)、处理的入口、特权级DPL
+    SETGATE(idt[T_SYSCALL], 1, GD_KTEXT, __vectors[T_SYSCALL], DPL_USER);
+    lidt(&idt_pd);//(3)用lidt函数告知CPU，注意传入的参数是IDT的地址
 }
 
 static const char *
@@ -214,26 +221,31 @@ trap_dispatch(struct trapframe *tf) {
     LAB3 : If some page replacement algorithm(such as CLOCK PRA) need tick to change the priority of pages,
     then you can add code here. 
 #endif
-        /* LAB1 YOUR CODE : STEP 3 */
-        /* handle the timer interrupt */
-        /* (1) After a timer interrupt, you should record this event using a global variable (increase it), such as ticks in kern/driver/clock.c
-         * (2) Every TICK_NUM cycle, you can print some info using a funciton, such as print_ticks().
-         * (3) Too Simple? Yes, I think so!
-         */
-        /* LAB5 YOUR CODE */
+		/* LAB1 2012011278 : STEP 3 */
+		/* handle the timer interrupt */
+		/* (1) After a timer interrupt, you should record this event using a global variable (increase it), such as ticks in kern/driver/clock.c
+		 * (2) Every TICK_NUM cycle, you can print some info using a funciton, such as print_ticks().
+		 * (3) Too Simple? Yes, I think so!
+		 */
+        /* LAB5 2012011278 */
         /* you should upate you lab1 code (just add ONE or TWO lines of code):
          *    Every TICK_NUM cycle, you should set current process's current->need_resched = 1
          */
-        /* LAB6 YOUR CODE */
+        /* LAB6 2012011278 */
         /* you should upate you lab5 code
          * IMPORTANT FUNCTIONS:
 	     * sched_class_proc_tick
          */         
-        /* LAB7 YOUR CODE */
+        /* LAB7 2012011278 */
         /* you should upate you lab6 code
          * IMPORTANT FUNCTIONS:
 	     * run_timer_list
          */
+        ticks ++;
+        assert(current != NULL);
+		//current->need_resched = 1;
+		//sched_class_proc_tick(current);
+        run_timer_list();
         break;
     case IRQ_OFFSET + IRQ_COM1:
     case IRQ_OFFSET + IRQ_KBD:
