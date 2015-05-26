@@ -633,7 +633,8 @@ sfs_io_nolock(struct sfs_fs *sfs, struct sfs_inode *sin, void *buf, off_t offset
     	if (ret != 0)
     		goto out;
     	//进行实际的读操作，操作失败跳到out部分
-    	ret = sfs_buf_op(sfs, buf, size, ino, blkoff);
+    	ret = sfs_block_op(sfs, buf, ino, 1);
+    	//ret = sfs_buf_op(sfs, buf, size, ino, blkoff);
     	if (ret != 0)
     		goto out;
     	//更新已经读取长度alen、存放数据位置buf、读取开始块blkno、剩余读取块数nblks
@@ -653,7 +654,7 @@ sfs_io_nolock(struct sfs_fs *sfs, struct sfs_inode *sin, void *buf, off_t offset
     	if (ret != 0)
     		goto out;
     	//进行实际的读操作，操作失败跳到out部分
-    	ret = sfs_buf_op(sfs, buf, size, ino, blkoff);
+    	ret = sfs_buf_op(sfs, buf, size, ino, 0);
     	if (ret != 0)
     		goto out;
     	//更新已经读取长度alen
